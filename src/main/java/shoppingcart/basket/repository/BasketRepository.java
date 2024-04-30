@@ -1,2 +1,4 @@
-package shoppingcart.basket.repository;public class BasketRepository {
+package shoppingcart.basket.repository;
+
+public interface BasketRepository {
 }

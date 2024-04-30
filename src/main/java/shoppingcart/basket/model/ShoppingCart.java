@@ -1,2 +1,4 @@
-package shoppingcart.basket.model;public class ShoppingCart {
+package shoppingcart.basket.model;
+
+public class ShoppingCart {
 }

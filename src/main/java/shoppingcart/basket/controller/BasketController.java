@@ -1,2 +1,4 @@
-package shoppingcart.basket.controller;public class BasketController {
+package shoppingcart.basket.controller;
+
+public class BasketController {
 }

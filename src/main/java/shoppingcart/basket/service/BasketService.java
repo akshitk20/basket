@@ -1,2 +1,4 @@
-package shoppingcart.basket.service;public class BasketService {
+package shoppingcart.basket.service;
+
+public class BasketService {
 }
