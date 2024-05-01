@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import shoppingcart.basket.model.ShoppingCart;
+import shoppingcart.basket.model.dto.BasketCheckoutDto;
+import shoppingcart.basket.model.request.CheckoutBasketRequest;
 import shoppingcart.basket.model.request.StoreBasketRequest;
+import shoppingcart.basket.model.response.CheckoutBasketResponse;
 import shoppingcart.basket.model.response.DeleteResponse;
 import shoppingcart.basket.model.response.GetBasketResponse;
 import shoppingcart.basket.model.response.StoreBasketResponse;
@@ -15,6 +19,7 @@ import shoppingcart.discount.DiscountProtoServiceGrpc;
 import shoppingcart.discount.GetDiscountRequest;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.Objects;
 
 @Service
@@ -23,9 +28,10 @@ import java.util.Objects;
 public class BasketService {
 
     private final RedisTemplate<String, ShoppingCart> redisTemplate;
-
     @GrpcClient("discount-service")
     DiscountProtoServiceGrpc.DiscountProtoServiceBlockingStub client;
+
+    private final KafkaTemplate<String, BasketCheckoutDto> kafkaTemplate;
 
     public GetBasketResponse getBasket(String userName) {
         ShoppingCart shoppingCart = redisTemplate.opsForValue().get(userName);
@@ -66,5 +72,23 @@ public class BasketService {
         return DeleteResponse.builder()
                 .isSuccess(Boolean.TRUE.equals(deleted))
                 .build();
+    }
+
+    public CheckoutBasketResponse checkoutBasket(CheckoutBasketRequest checkoutBasketRequest) {
+        ShoppingCart shoppingCart = redisTemplate.opsForValue().get(checkoutBasketRequest.getBasketCheckoutDto().getUserName());
+        if (Objects.isNull(shoppingCart)) {
+            return CheckoutBasketResponse.builder().build();
+        }
+
+        BasketCheckoutDto basketCheckoutDto = checkoutBasketRequest.getBasketCheckoutDto();
+        basketCheckoutDto.setTotalPrice(shoppingCart.getTotalPrice());
+        kafkaTemplate.send("checkout-topic",basketCheckoutDto);
+        log.info("message sent to topic ");
+        redisTemplate.delete(basketCheckoutDto.getUserName());
+        log.info("removed entry from redis for useName {} ", basketCheckoutDto.getUserName());
+        return CheckoutBasketResponse.builder()
+                .isSuccess(true)
+                .build();
+
     }
 }
