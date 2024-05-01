@@ -7,6 +7,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import shoppingcart.basket.model.ShoppingCart;
 import shoppingcart.basket.model.request.StoreBasketRequest;
+import shoppingcart.basket.model.response.DeleteResponse;
 import shoppingcart.basket.model.response.GetBasketResponse;
 import shoppingcart.basket.model.response.StoreBasketResponse;
 import shoppingcart.discount.CouponModel;
@@ -42,7 +43,7 @@ public class BasketService {
     public StoreBasketResponse storeBasket(StoreBasketRequest storeBasketRequest) {
         ShoppingCart shoppingCart = storeBasketRequest.getShoppingCart();
         BigDecimal totalAmount = BigDecimal.ZERO;
-        shoppingCart.getItems().stream().forEach(c -> {
+        shoppingCart.getItems().forEach(c -> {
             GetDiscountRequest getDiscountRequest = GetDiscountRequest.newBuilder()
                     .setProductName(c.getProductName())
                     .build();
@@ -56,6 +57,14 @@ public class BasketService {
         redisTemplate.opsForValue().set(shoppingCart.getUserName(), storeBasketRequest.getShoppingCart());
         return StoreBasketResponse.builder()
                 .userName(shoppingCart.getUserName())
+                .build();
+    }
+
+    public DeleteResponse deleteBasket(String userName) {
+        log.info("deleting userName {} ", userName);
+        Boolean deleted = redisTemplate.delete(userName);
+        return DeleteResponse.builder()
+                .isSuccess(Boolean.TRUE.equals(deleted))
                 .build();
     }
 }
